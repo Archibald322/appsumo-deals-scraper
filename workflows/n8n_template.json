@@ -1,0 +1,96 @@
+{
+  "name": "Sync High-Discount AppSumo Software Lifetime Deals to Google Sheets & Slack Alerts",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Daily Software Deals Monitor",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "actorId": "moneygain/appsumo-deals-scraper",
+        "runInput": "={\n  \"queries\": [\"ai\", \"lead-generation\"],\n  \"minDiscount\": 70,\n  \"maxItems\": 20\n}"
+      },
+      "id": "2",
+      "name": "Run AppSumo Scraper",
+      "type": "n8n-nodes-base.apify",
+      "typeVersion": 1,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "AppSumo_Deals",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData"
+        }
+      },
+      "id": "3",
+      "name": "Save Deals to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [690, 200]
+    },
+    {
+      "parameters": {
+        "channel": "#saas-deal-alerts",
+        "text": "=⚡ *New Top AppSumo Lifetime Deal!*\n🏷️ *{{ $json.name }}* ({{ $json.category }})\n💰 *LTD Price*: ${{ $json.price }} (Original: ~${{ $json.originalPrice }} | *{{ $json.discountPercentage }}% OFF*)\n📝 *Pitch*: {{ $json.description }}\n🔗 *Get Deal*: {{ $json.productUrl }}"
+      },
+      "id": "4",
+      "name": "Send Slack Deal Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [690, 400]
+    }
+  ],
+  "connections": {
+    "Daily Software Deals Monitor": {
+      "main": [
+        [
+          {
+            "node": "Run AppSumo Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run AppSumo Scraper": {
+      "main": [
+        [
+          {
+            "node": "Save Deals to Google Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Slack Deal Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
